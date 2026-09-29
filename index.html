@@ -300,7 +300,7 @@ function show(){
   s.innerHTML=`<div class="c"><div class="score">${score}/${Q.length}</div><p><b>Test score: ${pct}%</b><br>${score} correct · ${Q.length-score} wrong</p><p class="small">${L.name}</p><button class="nb" onclick="start(lesson)">Try again</button>${lesson<LES.length-1?`<button class="nb alt" onclick="start(${lesson+1})">Next lesson →</button>`:''}<button class="nb ghost" onclick="home()">All lessons</button></div><h3 class="revh">Review of your answers</h3><div class="rev">${rows}</div>`;return}
  const q=Q[i];
  let h=`<button class="back" onclick="home()">← All lessons</button><div class="track"><div class="fill" style="width:${i/Q.length*100}%"></div></div><div class="qn">QUESTION ${i+1} OF ${Q.length}</div><p class="qt">${q.q}</p>${q.pics||''}`;
- if(q.t==='mc')h+=`<div class="opts">${q.opts.map((o,j)=>`<button class="opt" onclick="pickMC(${j})"><b class="lt">${LT[j]}</b><span>${o}</span></button>`).join('')}</div>`;
+ if(q.t==='mc')h+=`<div class="opts">${q.opts.map((o,j)=>`<button class="opt" id="m${j}" onclick="selectMC(${j})"><b class="lt" id="lt${j}">${LT[j]}</b><span>${o}</span></button>`).join('')}</div><button class="nb" id="chk" onclick="confirmMC()" disabled>OK</button>`;
  if(q.t==='multi')h+=`<div class="opts">${q.opts.map((o,j)=>`<button class="opt" id="m${j}" onclick="tog(${j})"><b class="lt" id="lt${j}">☐ ${LT[j]}</b><span>${o}</span></button>`).join('')}</div><button class="nb" id="chk" onclick="chkMulti()">Check</button>`;
  if(q.t==='txt')h+=q.f.map((f,j)=>`<div class="f">${f.l.startsWith('<')?f.l:`<b>${f.l}:</b>`}<input type="text" id="in${j}" autocomplete="off"></div>`).join('')+`<button class="nb" id="chk" onclick="chkTxt()">Check</button>`;
  if(q.t==='sel')h+=q.rows.map((r,j)=>`<div class="f">${r[0].replace('[]',`<select id="s${j}"><option value="">?</option>${q.opts.map(o=>`<option>${o}</option>`).join('')}</select>`)}</div>`).join('')+`<button class="nb" id="chk" onclick="chkSel()">Check</button>`;
@@ -310,7 +310,9 @@ function show(){
 }
 function fin(ok,msg){$('fb').innerHTML=`<div class="fb ${ok?'good':'bad'}">${ok?'Nice work! ':'Not quite — '}${msg}</div><button class="nb alt" onclick="next(${ok})">Next</button>`;const c=$('chk');if(c)c.disabled=true}
 const cur=()=>LES[lesson].qs[i];
-function pickMC(j){const q=cur();lastGiven=LT[j]+' '+q.opts[j];document.querySelectorAll('.opt').forEach((o,k)=>{o.disabled=true;if(k===q.a)o.classList.add('ok');else if(k===j)o.classList.add('no')});fin(j===q.a,q.exp)}
+let selMC=null;
+function selectMC(j){selMC=j;document.querySelectorAll('.opts .opt').forEach((o,k)=>o.classList.toggle('sel',k===j));$('chk').disabled=false}
+function confirmMC(){if(selMC===null)return;const q=cur(),j=selMC;lastGiven=LT[j]+' '+q.opts[j];document.querySelectorAll('.opts .opt').forEach((o,k)=>{o.disabled=true;o.classList.remove('sel');if(k===q.a)o.classList.add('ok');else if(k===j)o.classList.add('no')});selMC=null;fin(j===q.a,q.exp)}
 function tog(j){const b=$('m'+j);if(picked.has(j)){picked.delete(j);b.classList.remove('sel')}else{picked.add(j);b.classList.add('sel')}$('lt'+j).textContent=(picked.has(j)?'☑ ':'☐ ')+LT[j]}
 function chkMulti(){const q=cur();const ok=picked.size===q.a.length&&q.a.every(x=>picked.has(x));lastGiven=[...picked].sort().map(j=>LT[j]+' '+q.opts[j]).join('; ')||'(none selected)';picked.clear();fin(ok,q.exp)}
 function chkTxt(){const q=cur();lastGiven=q.f.map((f,j)=>{const v=($('in'+j).value||'').trim()||'—';return q.f.length>1?(f.l.startsWith('<')?'('+(j+1)+') ':f.l.replace(/<[^>]*>/g,'')+': ')+v:v}).join('; ');fin(q.f.every((f,j)=>{const v=norm($('in'+j).value);return f.a.includes(v)||(f.has&&v.includes(f.has))}),q.show)}
